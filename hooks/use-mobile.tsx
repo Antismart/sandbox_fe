@@ -2,20 +2,21 @@
 
 import * as React from "react"
 
-export function useMediaQuery(query: string) {
-  const [value, setValue] = React.useState(false)
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = React.useState(false)
 
   React.useEffect(() => {
-    function onChange(event: MediaQueryListEvent) {
-      setValue(event.matches)
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768) // Tailwind's 'md' breakpoint
     }
 
-    const result = matchMedia(query)
-    result.addEventListener("change", onChange)
-    setValue(result.matches)
+    checkIsMobile()
+    window.addEventListener("resize", checkIsMobile)
 
-    return () => result.removeEventListener("change", onChange)
-  }, [query])
+    return () => {
+      window.removeEventListener("resize", checkIsMobile)
+    }
+  }, [])
 
-  return value
+  return isMobile
 }

@@ -49,14 +49,4 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-/* This file is not used, but is kept for compatibility with shadcn/ui. */
-/* Global styles are now in app/globals.css */
+/* This file is intentionally left blank as app/globals.css is used for global styles. */

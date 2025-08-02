@@ -1,16 +1,16 @@
-import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
+import { NextAuth } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
 import { getUserByEmail, verifyPassword } from "./mock-db"
 import type { User } from "./types"
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
     signIn: "/auth/login",
     newUser: "/auth/signup",
     verifyRequest: "/auth/verify-email",
   },
   providers: [
-    Credentials({
+    CredentialsProvider({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
@@ -68,3 +68,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   secret: process.env.AUTH_SECRET,
 })
+
+export { handlers, signIn, signOut, auth }

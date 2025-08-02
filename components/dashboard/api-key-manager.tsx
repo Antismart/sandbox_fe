@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "@/components/ui/use-toast"
-import ApiKeyTable from "./api-key-table"
-import CreateApiKeyDialog from "./create-api-key-dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ApiKeyTable } from "./api-key-table"
+import { CreateApiKeyDialog } from "./create-api-key-dialog"
 import type { ApiKey } from "@/lib/types"
 
 export default function ApiKeyManager() {
@@ -16,7 +17,8 @@ export default function ApiKeyManager() {
     data: apiKeys,
     isLoading,
     isError,
-  } = useQuery<ApiKey[]>({
+    error,
+  } = useQuery<ApiKey[], Error>({
     queryKey: ["apiKeys"],
     queryFn: async () => {
       const response = await fetch("/api/keys")
@@ -28,12 +30,12 @@ export default function ApiKeyManager() {
     },
   })
 
-  const createApiKeyMutation = useMutation({
-    mutationFn: async (name: string) => {
+  const createApiKeyMutation = useMutation<ApiKey, Error, { name: string }>({
+    mutationFn: async (newKeyData) => {
       const response = await fetch("/api/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(newKeyData),
       })
       if (!response.ok) {
         const errorData = await response.json()
@@ -41,18 +43,25 @@ export default function ApiKeyManager() {
       }
       return response.json()
     },
-    onSuccess: () => {
+    onSuccess: (newKey) => {
       queryClient.invalidateQueries({ queryKey: ["apiKeys"] })
-      toast({ title: "API Key Created", description: "Your new API key has been generated." })
+      toast({
+        title: "API Key Created",
+        description: `New key "${newKey.name}" generated successfully.`,
+      })
       setIsCreateDialogOpen(false)
     },
     onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({
+        title: "Error creating API Key",
+        description: error.message,
+        variant: "destructive",
+      })
     },
   })
 
-  const regenerateApiKeyMutation = useMutation({
-    mutationFn: async (id: string) => {
+  const regenerateApiKeyMutation = useMutation<ApiKey, Error, string>({
+    mutationFn: async (id) => {
       const response = await fetch(`/api/keys/${id}/regenerate`, {
         method: "POST",
       })
@@ -62,17 +71,24 @@ export default function ApiKeyManager() {
       }
       return response.json()
     },
-    onSuccess: () => {
+    onSuccess: (regeneratedKey) => {
       queryClient.invalidateQueries({ queryKey: ["apiKeys"] })
-      toast({ title: "API Key Regenerated", description: "The API key has been successfully regenerated." })
+      toast({
+        title: "API Key Regenerated",
+        description: `Key "${regeneratedKey.name}" regenerated successfully.`,
+      })
     },
     onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({
+        title: "Error regenerating API Key",
+        description: error.message,
+        variant: "destructive",
+      })
     },
   })
 
-  const deleteApiKeyMutation = useMutation({
-    mutationFn: async (id: string) => {
+  const deleteApiKeyMutation = useMutation<void, Error, string>({
+    mutationFn: async (id) => {
       const response = await fetch(`/api/keys/${id}`, {
         method: "DELETE",
       })
@@ -83,34 +99,68 @@ export default function ApiKeyManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["apiKeys"] })
-      toast({ title: "API Key Deleted", description: "The API key has been successfully deleted." })
+      toast({
+        title: "API Key Deleted",
+        description: "The API key has been successfully deleted.",
+      })
     },
     onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({
+        title: "Error deleting API Key",
+        description: error.message,
+        variant: "destructive",
+      })
     },
   })
 
-  if (isLoading) return <div>Loading API keys...</div>
-  if (isError) return <div>Error loading API keys.</div>
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>API Keys</CardTitle>
+          <CardDescription>Manage your API keys here.</CardDescription>
+        </CardHeader>
+        <CardContent>Loading API keys...</CardContent>
+      </Card>
+    )
+  }
+
+  if (isError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>API Keys</CardTitle>
+          <CardDescription>Manage your API keys here.</CardDescription>
+        </CardHeader>
+        <CardContent className="text-destructive">Error: {error?.message || "Failed to load API keys."}</CardContent>
+      </Card>
+    )
+  }
 
   return (
-    <div>
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => setIsCreateDialogOpen(true)}>Create New API Key</Button>
-      </div>
-      <ApiKeyTable
-        apiKeys={apiKeys || []}
-        onRegenerate={regenerateApiKeyMutation.mutate}
-        onDelete={deleteApiKeyMutation.mutate}
-        isRegenerating={regenerateApiKeyMutation.isPending}
-        isDeleting={deleteApiKeyMutation.isPending}
-      />
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle>API Keys</CardTitle>
+          <CardDescription>Manage your API keys here.</CardDescription>
+        </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>Create New Key</Button>
+      </CardHeader>
+      <CardContent>
+        <ApiKeyTable
+          apiKeys={apiKeys || []}
+          onRegenerate={regenerateApiKeyMutation.mutate}
+          onDelete={deleteApiKeyMutation.mutate}
+          isRegenerating={regenerateApiKeyMutation.isPending}
+          isDeleting={deleteApiKeyMutation.isPending}
+        />
+      </CardContent>
       <CreateApiKeyDialog
-        open={isCreateDialogOpen}
+        isOpen={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         onCreate={createApiKeyMutation.mutate}
         isCreating={createApiKeyMutation.isPending}
       />
-    </div>
+    </Card>
   )
 }

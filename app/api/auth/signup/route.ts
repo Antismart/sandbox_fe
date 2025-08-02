@@ -1,26 +1,29 @@
 import { NextResponse } from "next/server"
 import { createUser } from "@/lib/mock-db"
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { email, password } = await request.json()
+    const { name, email, password } = await req.json()
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 })
     }
 
-    const user = createUser(email, password)
+    const user = createUser(name, email, password)
 
     if (!user) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
     }
 
     return NextResponse.json(
-      { message: "User created successfully. Verification code sent to email." },
+      {
+        message: "User created successfully. Please verify your email.",
+        user: { id: user.id, email: user.email, name: user.name },
+      },
       { status: 201 },
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error during signup:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 })
   }
 }

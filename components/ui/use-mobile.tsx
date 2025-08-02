@@ -2,15 +2,21 @@
 
 import * as React from "react"
 
-import { useMediaQuery } from "@/hooks/use-mobile"
-
 export function useIsMobile() {
-  const isMobile = useMediaQuery("(max-width: 768px)")
-  const [mounted, setMounted] = React.useState(false)
+  const [isMobile, setIsMobile] = React.useState(false)
 
   React.useEffect(() => {
-    setMounted(true)
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768) // Tailwind's 'md' breakpoint
+    }
+
+    checkIsMobile()
+    window.addEventListener("resize", checkIsMobile)
+
+    return () => {
+      window.removeEventListener("resize", checkIsMobile)
+    }
   }, [])
 
-  return mounted ? isMobile : false
+  return isMobile
 }

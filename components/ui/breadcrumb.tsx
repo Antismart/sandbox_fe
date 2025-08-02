@@ -26,9 +26,7 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWi
 BreadcrumbList.displayName = "BreadcrumbList"
 
 const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
-  ({ className, ...props }, ref) => (
-    <li ref={ref} className={cn("inline-flex items-center gap-1.5", className)} {...props} />
-  ),
+  ({ className, ...props }, ref) => <li ref={ref} className={cn("inline-flex items-center", className)} {...props} />,
 )
 BreadcrumbItem.displayName = "BreadcrumbItem"
 
@@ -64,7 +62,7 @@ const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentP
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator"
 
 const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<typeof MoreHorizontal>) => (
-  <span
+  <li
     role="presentation"
     aria-hidden="true"
     className={cn("flex h-9 w-9 items-center justify-center", className)}
@@ -72,7 +70,7 @@ const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<typeof
   >
     <MoreHorizontal className="h-4 w-4" />
     <span className="sr-only">More</span>
-  </span>
+  </li>
 )
 BreadcrumbEllipsis.displayName = "BreadcrumbEllipsis"
 

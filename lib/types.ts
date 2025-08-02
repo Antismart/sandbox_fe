@@ -1,17 +1,16 @@
-export interface User {
+export type User = {
   id: string
+  name: string
   email: string
-  password?: string // Optional for client-side, required for mock-db
-  name?: string
+  password?: string
   emailVerified?: boolean
   verificationCode?: string
 }
 
-export interface ApiKey {
+export type ApiKey = {
   id: string
   userId: string
   name: string
   key: string
   createdAt: string
-  lastUsed?: string
 }

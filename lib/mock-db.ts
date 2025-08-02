@@ -1,14 +1,17 @@
 import type { User, ApiKey } from "./types"
-import { v4 as uuidv4 } from "uuid"
 import bcrypt from "bcryptjs"
 
-// In-memory mock database
 const users: User[] = []
 const apiKeys: ApiKey[] = []
 
-// Utility to generate a random 6-digit code
-function generateVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+// Helper to generate a random API key
+function generateApiKey(): string {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  let result = ""
+  for (let i = 0; i < 32; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length))
+  }
+  return `sk-${result}`
 }
 
 // User functions
@@ -16,27 +19,29 @@ export function getUserByEmail(email: string): User | undefined {
   return users.find((user) => user.email === email)
 }
 
-export function getUserById(id: string): User | undefined {
-  return users.find((user) => user.id === id)
+export async function verifyPassword(password: string, hashedPassword?: string): Promise<boolean> {
+  if (!hashedPassword) return false
+  return bcrypt.compare(password, hashedPassword)
 }
 
-export function createUser(email: string, passwordPlain: string): User | undefined {
+export function createUser(name: string, email: string, passwordPlain: string): User | null {
   if (getUserByEmail(email)) {
-    return undefined // User already exists
+    return null // User already exists
   }
 
   const hashedPassword = bcrypt.hashSync(passwordPlain, 10)
-  const verificationCode = generateVerificationCode()
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString() // 6-digit code
 
   const newUser: User = {
-    id: uuidv4(),
+    id: crypto.randomUUID(),
+    name,
     email,
     password: hashedPassword,
-    emailVerified: false,
+    emailVerified: false, // Set to false initially
     verificationCode,
   }
   users.push(newUser)
-  console.log(`User created: ${email}. Verification code: ${verificationCode}`) // Log code for testing
+  console.log(`User created: ${newUser.email}, Verification Code: ${newUser.verificationCode}`)
   return newUser
 }
 
@@ -44,8 +49,8 @@ export function verifyUserEmail(email: string, code: string): boolean {
   const user = getUserByEmail(email)
   if (user && user.verificationCode === code && !user.emailVerified) {
     user.emailVerified = true
-    user.verificationCode = undefined // Clear code after verification
-    console.log(`Email ${email} verified successfully.`)
+    user.verificationCode = undefined // Clear the code after verification
+    console.log(`Email verified for user: ${user.email}`)
     return true
   }
   return false
@@ -54,16 +59,11 @@ export function verifyUserEmail(email: string, code: string): boolean {
 export function resendVerificationCode(email: string): boolean {
   const user = getUserByEmail(email)
   if (user && !user.emailVerified) {
-    const newCode = generateVerificationCode()
-    user.verificationCode = newCode
-    console.log(`New verification code for ${email}: ${newCode}`) // Log new code
+    user.verificationCode = Math.floor(100000 + Math.random() * 900000).toString()
+    console.log(`New verification code for ${user.email}: ${user.verificationCode}`)
     return true
   }
   return false
-}
-
-export async function verifyPassword(plain: string, hashed: string): Promise<boolean> {
-  return bcrypt.compare(plain, hashed)
 }
 
 // API Key functions
@@ -71,13 +71,9 @@ export function getApiKeysByUserId(userId: string): ApiKey[] {
   return apiKeys.filter((key) => key.userId === userId)
 }
 
-export function getApiKeyById(id: string): ApiKey | undefined {
-  return apiKeys.find((key) => key.id === id)
-}
-
 export function createApiKey(userId: string, name: string): ApiKey {
   const newKey: ApiKey = {
-    id: uuidv4(),
+    id: crypto.randomUUID(),
     userId,
     name,
     key: generateApiKey(),
@@ -87,21 +83,30 @@ export function createApiKey(userId: string, name: string): ApiKey {
   return newKey
 }
 
-export function updateApiKey(updatedKey: ApiKey): void {
-  const index = apiKeys.findIndex((key) => key.id === updatedKey.id)
-  if (index !== -1) {
-    apiKeys[index] = updatedKey
+export function regenerateApiKey(id: string, userId: string): ApiKey | null {
+  const index = apiKeys.findIndex((key) => key.id === id && key.userId === userId)
+  if (index === -1) {
+    return null
   }
+  apiKeys[index].key = generateApiKey()
+  apiKeys[index].createdAt = new Date().toISOString()
+  return apiKeys[index]
 }
 
-export function deleteApiKey(id: string): boolean {
+export function deleteApiKey(id: string, userId: string): boolean {
   const initialLength = apiKeys.length
-  const updatedKeys = apiKeys.filter((key) => key.id !== id)
-  apiKeys.length = 0 // Clear existing array
-  apiKeys.push(...updatedKeys) // Push filtered keys back
+  const updatedKeys = apiKeys.filter((key) => !(key.id === id && key.userId === userId))
+  apiKeys.splice(0, apiKeys.length, ...updatedKeys) // Mutate the original array
   return apiKeys.length < initialLength
 }
 
-export function generateApiKey(): string {
-  return uuidv4().replace(/-/g, "") + uuidv4().replace(/-/g, "") // Generate a longer key
+// Seed some initial data for testing
+if (users.length === 0) {
+  const testUser = createUser("Test User", "test@example.com", "password123")
+  if (testUser) {
+    testUser.emailVerified = true // Auto-verify for easier testing
+    testUser.verificationCode = undefined
+    createApiKey(testUser.id, "My First API Key")
+    createApiKey(testUser.id, "Another Key for Project X")
+  }
 }

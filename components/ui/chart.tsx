@@ -1,216 +1,202 @@
 "use client"
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  Bar,
+  BarChart,
+  Pie,
+  PieChart,
+  RadialBar,
+  RadialBarChart,
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts"
 
-import * as React from "react"
-import * as RechartsPrimitive from "recharts"
-
+import { type ChartConfig, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
+import React from "react"
+import { ChartContainer as RechartsChartContainer } from "@tremor/react"
 
-// Workaround for https://github.com/recharts/recharts/issues/3615
-const Customized = <T extends object>(
-  props: T & {
-    component: React.ComponentType<T>
-  },
-) => {
-  const { component: Component, ...rest } = props
-  return <Component {...rest} />
-}
-
-const ChartContext = React.createContext<{
+// Define types for common chart props
+interface BaseChartProps {
+  data: Record<string, any>[]
   config: ChartConfig
-} | null>(null)
-
-function useChart() {
-  const context = React.useContext(ChartContext)
-
-  if (!context) {
-    throw new Error("useChart must be used within a <Chart />")
-  }
-
-  return context
+  className?: string
 }
 
-type ChartConfig = {
-  [k: string]: {
-    label?: React.ReactNode
-    icon?: React.ComponentType
-    color?: string
-  }
+interface LineChartProps extends BaseChartProps {
+  lines: { dataKey: string; stroke: string; type?: "monotone" | "linear" }[]
 }
 
-type ChartContainerProps = {
-  config: ChartConfig
-  children: React.ReactNode
-} & React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>
+interface BarChartProps extends BaseChartProps {
+  bars: { dataKey: string; fill: string }[]
+}
 
-const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
-  ({ config, className, children, ...props }, ref) => {
-    const newConfig = React.useMemo(() => {
-      if (config) {
-        return Object.entries(config).map(([key, value]) => ({
-          key,
-          ...value,
-        }))
-      }
-      return []
-    }, [config])
+interface AreaChartProps extends BaseChartProps {
+  areas: { dataKey: string; fill: string; stroke: string; type?: "monotone" | "linear" }[]
+}
 
-    return (
-      <ChartContext.Provider value={{ config }}>
-        <div
-          ref={ref}
-          className={cn("flex h-[350px] w-full flex-col items-center justify-center", className)}
-          {...props}
-        >
-          <RechartsPrimitive.ResponsiveContainer {...props}>{children}</RechartsPrimitive.ResponsiveContainer>
-        </div>
-      </ChartContext.Provider>
-    )
-  },
-)
+interface PieChartProps extends BaseChartProps {
+  dataKey: string
+  nameKey: string
+  outerRadius?: number
+  innerRadius?: number
+  fill?: string
+  label?: boolean
+}
+
+interface RadialBarChartProps extends BaseChartProps {
+  dataKey: string
+  angleAxisDataKey?: string
+  barSize?: number
+  innerRadius?: string | number
+  outerRadius?: string | number
+}
+
+const ChartContainer = React.forwardRef<HTMLDivElement, any>(({ className, ...props }, ref) => (
+  <RechartsChartContainer ref={ref} className={cn("flex aspect-video h-full w-full", className)} {...props} />
+))
 ChartContainer.displayName = "ChartContainer"
 
-const ChartTooltip = RechartsPrimitive.Tooltip
-
-const ChartTooltipContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-    React.ComponentPropsWithoutRef<"div"> & {
-      hideLabel?: boolean
-      hideIndicator?: boolean
-      is
-      nameKey?: string
-      labelKey?: string
-    }
->(
-  (
-    {
-      active,
-      payload,
-      className,
-      indicator = "dot",
-      hideLabel = false,
-      hideIndicator = false,
-      label,
-      labelFormatter,
-      labelClassName,
-      formatter,
-      color,
-      nameKey,
-      labelKey,
-      ...props
-    },
-    ref,
-  ) => {
-    const { config } = useChart()
-
-    const tooltipLabel = React.useMemo(() => {
-      if (hideLabel) {
-        return null
-      }
-
-      if (labelFormatter) {
-        return <div className={cn("font-medium", labelClassName)}>{labelFormatter(label, payload)}</div>
-      }
-
-      if (labelKey) {
-        return <div className={cn("font-medium", labelClassName)}>{payload?.[0]?.payload[labelKey]}</div>
-      }
-
-      return <div className={cn("font-medium", labelClassName)}>{label || "Unknown"}</div>
-    }, [hideLabel, labelFormatter, label, payload, labelClassName, labelKey])
-
-    if (active && payload && payload.length) {
-      return (
-        <div
-          ref={ref}
-          className={cn("rounded-lg border border-border bg-background p-2 text-sm shadow-md", className)}
-          {...props}
-        >
-          {tooltipLabel}
-          <div className="grid gap-1.5">
-            {payload.map((item: any, i: number) => {
-              if (item.dataKey === "tooltip") return null
-
-              const value = formatter ? formatter(item.value, item.name, item, i) : item.value
-              const name = nameKey ? item.payload[nameKey] : item.nameKey || item.name
-
-              const content = config[item.dataKey as keyof typeof config]
-
-              return (
-                <div key={item.dataKey} className="flex items-center gap-2 [&>svg]:size-2.5">
-                  {hideIndicator ? null : indicator === "dot" ? (
-                    <div
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{
-                        backgroundColor: color || item.color || content?.color,
-                      }}
-                    />
-                  ) : (
-                    <content.icon />
-                  )}
-                  {content?.label || name}: {value}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )
-    }
-
-    return null
-  },
+// Line Chart Component
+const ChartLine = ({ data, config, lines, className }: LineChartProps) => (
+  <ChartContainer config={config} className={className}>
+    <ResponsiveContainer>
+      <LineChart data={data}>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="name"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => value.slice(0, 3)}
+        />
+        <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+        {lines.map((lineProps, index) => (
+          <Line key={index} dot={false} {...lineProps} />
+        ))}
+      </LineChart>
+    </ResponsiveContainer>
+  </ChartContainer>
 )
-ChartTooltipContent.displayName = "ChartTooltipContent"
 
-const ChartLegend = RechartsPrimitive.Legend
+// Bar Chart Component
+const ChartBar = ({ data, config, bars, className }: BarChartProps) => (
+  <ChartContainer config={config} className={className}>
+    <ResponsiveContainer>
+      <BarChart data={data}>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="name"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => value.slice(0, 3)}
+        />
+        <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+        {bars.map((barProps, index) => (
+          <Bar key={index} {...barProps} />
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
+  </ChartContainer>
+)
 
-const ChartLegendContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Legend> &
-    React.ComponentPropsWithoutRef<"div"> & {
-      hideIndicator?: boolean
-      nameKey?: string
-    }
->(({ className, hideIndicator = false, formatter, nameKey, ...props }, ref) => {
-  const { config } = useChart()
+// Area Chart Component
+const ChartArea = ({ data, config, areas, className }: AreaChartProps) => (
+  <ChartContainer config={config} className={className}>
+    <ResponsiveContainer>
+      <AreaChart data={data}>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="name"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => value.slice(0, 3)}
+        />
+        <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+        {areas.map((areaProps, index) => (
+          <Area key={index} type="monotone" {...areaProps} />
+        ))}
+      </AreaChart>
+    </ResponsiveContainer>
+  </ChartContainer>
+)
 
-  return (
-    <div ref={ref} className={cn("flex flex-wrap items-center justify-center gap-4", className)} {...props}>
-      {props.payload?.map((item: any) => {
-        const content = config[item.dataKey as keyof typeof config]
+// Pie Chart Component
+const ChartPie = ({
+  data,
+  config,
+  dataKey,
+  nameKey,
+  outerRadius = 80,
+  innerRadius = 0,
+  fill = "#8884d8",
+  label,
+  className,
+}: PieChartProps) => (
+  <ChartContainer config={config} className={className}>
+    <ResponsiveContainer>
+      <PieChart>
+        <Tooltip content={<ChartTooltipContent />} />
+        <Legend />
+        <Pie
+          data={data}
+          dataKey={dataKey}
+          nameKey={nameKey}
+          outerRadius={outerRadius}
+          innerRadius={innerRadius}
+          fill={fill}
+          label={label}
+        />
+      </PieChart>
+    </ResponsiveContainer>
+  </ChartContainer>
+)
 
-        if (!content) return null
+// Radial Bar Chart Component
+const ChartRadialBar = ({
+  data,
+  config,
+  dataKey,
+  angleAxisDataKey = "name",
+  barSize = 10,
+  innerRadius = "20%",
+  outerRadius = "100%",
+  className,
+}: RadialBarChartProps) => (
+  <ChartContainer config={config} className={className}>
+    <ResponsiveContainer>
+      <RadialBarChart
+        innerRadius={innerRadius}
+        outerRadius={outerRadius}
+        barSize={barSize}
+        data={data}
+        startAngle={90}
+        endAngle={-270}
+      >
+        <RadialBar
+          minAngle={15}
+          label={{ position: "insideStart", fill: "#fff" }}
+          background
+          clockWise
+          dataKey={dataKey}
+        />
+        <Tooltip content={<ChartTooltipContent />} />
+        <Legend iconSize={10} layout="vertical" verticalAlign="middle" align="right" />
+      </RadialBarChart>
+    </ResponsiveContainer>
+  </ChartContainer>
+)
 
-        const name = nameKey ? item.payload[nameKey] : item.name
-
-        return (
-          <div key={item.value} className="flex items-center gap-1.5 [&>svg]:size-3">
-            {hideIndicator ? null : content.icon ? (
-              <content.icon />
-            ) : (
-              <div
-                className="h-2 w-2 rounded-full"
-                style={{
-                  backgroundColor: content.color,
-                }}
-              />
-            )}
-            {formatter ? formatter(name, item, item.value) : name}
-          </div>
-        )
-      })}
-    </div>
-  )
-})
-ChartLegendContent.displayName = "ChartLegendContent"
-
-export {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-  // Recharts
-  RechartsPrimitive as Recharts,
-  Customized,
-}
+export { ChartLine, ChartBar, ChartArea, ChartPie, ChartRadialBar, ChartContainer }

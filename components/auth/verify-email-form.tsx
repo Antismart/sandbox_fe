@@ -2,31 +2,19 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
 
 export default function VerifyEmailForm() {
+  const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const email = searchParams.get("email") || ""
   const { toast } = useToast()
-
-  useEffect(() => {
-    if (!email) {
-      toast({
-        title: "Error",
-        description: "Email not provided. Please sign up again.",
-        variant: "destructive",
-      })
-      router.push("/auth/signup")
-    }
-  }, [email, router, toast])
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,7 +51,7 @@ export default function VerifyEmailForm() {
     }
   }
 
-  const handleResend = async () => {
+  const handleResendCode = async () => {
     setIsLoading(true)
     try {
       const response = await fetch("/api/auth/resend-verification", {
@@ -77,7 +65,7 @@ export default function VerifyEmailForm() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to resend code")
+        throw new Error(data.error || "Failed to resend verification code")
       }
 
       toast({
@@ -87,7 +75,7 @@ export default function VerifyEmailForm() {
     } catch (error: any) {
       toast({
         title: "Resend Failed",
-        description: error.message || "An unexpected error occurred while resending.",
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       })
     } finally {
@@ -96,33 +84,42 @@ export default function VerifyEmailForm() {
   }
 
   return (
-    <form onSubmit={handleVerify} className="grid gap-4">
-      <div className="grid gap-2">
-        <Label htmlFor="code" className="text-center">
-          Verification Code
-        </Label>
-        <InputOTP maxLength={6} value={code} onChange={(value) => setCode(value)} disabled={isLoading}>
-          <InputOTPGroup className="w-full justify-center">
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
-          </InputOTPGroup>
-        </InputOTP>
+    <form onSubmit={handleVerify} className="space-y-4">
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="m@example.com"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={isLoading}
+        />
       </div>
-      <Button type="submit" className="w-full" disabled={isLoading || code.length !== 6}>
+      <div>
+        <Label htmlFor="code">Verification Code</Label>
+        <Input
+          id="code"
+          type="text"
+          placeholder="123456"
+          required
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          disabled={isLoading}
+        />
+      </div>
+      <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Verifying..." : "Verify Email"}
       </Button>
       <Button
         type="button"
         variant="outline"
         className="w-full bg-transparent"
-        onClick={handleResend}
+        onClick={handleResendCode}
         disabled={isLoading}
       >
-        Resend Code
+        {isLoading ? "Resending..." : "Resend Code"}
       </Button>
     </form>
   )

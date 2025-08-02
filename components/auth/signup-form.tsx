@@ -3,13 +3,14 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
 
 export default function SignupForm() {
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -26,7 +27,7 @@ export default function SignupForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       })
 
       const data = await response.json()
@@ -39,7 +40,7 @@ export default function SignupForm() {
         title: "Signup Successful",
         description: "Please check your email to verify your account.",
       })
-      router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
+      router.push("/auth/verify-email")
     } catch (error: any) {
       toast({
         title: "Signup Failed",
@@ -52,8 +53,20 @@ export default function SignupForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      <div className="grid gap-2">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Name</Label>
+        <Input
+          id="name"
+          type="text"
+          placeholder="John Doe"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={isLoading}
+        />
+      </div>
+      <div>
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
@@ -65,7 +78,7 @@ export default function SignupForm() {
           disabled={isLoading}
         />
       </div>
-      <div className="grid gap-2">
+      <div>
         <Label htmlFor="password">Password</Label>
         <Input
           id="password"

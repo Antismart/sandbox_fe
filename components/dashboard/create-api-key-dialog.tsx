@@ -1,5 +1,8 @@
 "use client"
 
+import type React from "react"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,51 +14,56 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from "react"
 
 interface CreateApiKeyDialogProps {
-  open: boolean
+  isOpen: boolean
   onOpenChange: (open: boolean) => void
-  onCreate: (name: string) => void
+  onCreate: (data: { name: string }) => void
   isCreating: boolean
 }
 
-export default function CreateApiKeyDialog({ open, onOpenChange, onCreate, isCreating }: CreateApiKeyDialogProps) {
-  const [name, setName] = useState("")
+export function CreateApiKeyDialog({ isOpen, onOpenChange, onCreate, isCreating }: CreateApiKeyDialogProps) {
+  const [keyName, setKeyName] = useState("")
 
-  const handleSubmit = () => {
-    if (name.trim()) {
-      onCreate(name)
-      setName("") // Clear input after submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (keyName.trim()) {
+      onCreate({ name: keyName.trim() })
+      setKeyName("")
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New API Key</DialogTitle>
-          <DialogDescription>Give your new API key a descriptive name.</DialogDescription>
+          <DialogDescription>
+            Give your new API key a descriptive name. This will help you identify it later.
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="col-span-3"
-              disabled={isCreating}
-            />
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={keyName}
+                onChange={(e) => setKeyName(e.target.value)}
+                className="col-span-3"
+                required
+                disabled={isCreating}
+              />
+            </div>
           </div>
-        </div>
-        <DialogFooter>
-          <Button type="submit" onClick={handleSubmit} disabled={isCreating}>
-            {isCreating ? "Creating..." : "Create Key"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="submit" disabled={isCreating}>
+              {isCreating ? "Creating..." : "Create Key"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

@@ -3,12 +3,12 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
+import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")
@@ -29,11 +29,20 @@ export default function LoginForm() {
       })
 
       if (result?.error) {
-        toast({
-          title: "Login Failed",
-          description: result.error,
-          variant: "destructive",
-        })
+        if (result.error.includes("Email not verified")) {
+          toast({
+            title: "Email Not Verified",
+            description: "Please check your email for a verification code.",
+            variant: "destructive",
+          })
+          router.push("/auth/verify-email")
+        } else {
+          toast({
+            title: "Login Failed",
+            description: result.error,
+            variant: "destructive",
+          })
+        }
       } else {
         toast({
           title: "Login Successful",
@@ -41,10 +50,10 @@ export default function LoginForm() {
         })
         router.push("/dashboard")
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       })
     } finally {
@@ -53,8 +62,8 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      <div className="grid gap-2">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
@@ -66,7 +75,7 @@ export default function LoginForm() {
           disabled={isLoading}
         />
       </div>
-      <div className="grid gap-2">
+      <div>
         <Label htmlFor="password">Password</Label>
         <Input
           id="password"

@@ -4,18 +4,20 @@ import Link from "next/link"
 
 export default function VerifyEmailPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-8 dark:bg-gray-900">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl">Verify Your Email</CardTitle>
-          <CardDescription>Enter the 6-digit code sent to your email address to verify your account.</CardDescription>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Verify Your Email</CardTitle>
+          <CardDescription>
+            A verification code has been sent to your email address. Please enter it below.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <VerifyEmailForm />
-          <div className="mt-4 text-center text-sm">
-            Didn&apos;t receive the code?{" "}
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            Didn&apos;t receive the email?{" "}
             <Link href="#" className="underline">
-              Resend
+              Resend code
             </Link>
           </div>
         </CardContent>

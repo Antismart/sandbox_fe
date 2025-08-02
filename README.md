@@ -1,100 +1,102 @@
 # Modern React Dashboard
 
-This is a modern React dashboard application built with Next.js, Tailwind CSS, and shadcn/ui. It includes authentication powered by NextAuth.js and a mock API key management system.
+This is a modern React dashboard application built with Next.js, Tailwind CSS, and shadcn/ui. It includes authentication powered by NextAuth.js and features for managing API keys.
 
 ## Getting Started
 
-1.  **Clone the repository:**
-    \`\`\`bash
-    git clone <repository-url>
-    cd modern-react-dashboard
-    \`\`\`
-2.  **Install dependencies:**
-    \`\`\`bash
-    npm install
-    # or
-    yarn install
-    # or
-    pnpm install
-    \`\`\`
-3.  **Set up environment variables:**
-    Create a `.env.local` file in the root of your project and add the following:
-    \`\`\`
-    AUTH_SECRET="YOUR_SECRET_HERE"
-    NODE_ENV=development
-    \`\`\`
-    Replace `YOUR_SECRET_HERE` with a strong, random string. You can generate one using `openssl rand -base64 32`.
+First, install the dependencies:
 
-4.  **Run the development server:**
-    \`\`\`bash
-    npm run dev
-    # or
-    yarn dev
-    # or
-    pnpm dev
-    \`\`\`
-    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+\`\`\`bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+\`\`\`
+
+Then, run the development server:
+
+\`\`\`bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+\`\`\`
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Environment Variables
+
+This project uses `AUTH_SECRET` for NextAuth.js. Make sure to set it in your `.env.local` file:
+
+\`\`\`
+AUTH_SECRET="YOUR_SECRET_HERE"
+\`\`\`
+
+You can generate a strong secret using `openssl rand -base64 32`.
 
 ## Features
 
-*   **Authentication:** User login, signup, and email verification (mocked).
-*   **API Key Management:** Create, view, regenerate, enable/disable, and delete API keys (mocked).
-*   **Responsive Design:** Built with Tailwind CSS for a mobile-first approach.
-*   **shadcn/ui:** Beautiful and accessible UI components.
-*   **Next.js App Router:** Modern routing and data fetching.
+- User Authentication (Login, Signup, Email Verification)
+- Dashboard with API Key Management
+- Responsive Design
+- Dark Mode Support
+- Shadcn/ui Components
+- Next.js App Router
 
 ## Project Structure
 
+-   `app/`: Next.js App Router pages and API routes.
+    -   `auth/`: Authentication pages (login, signup, verify-email).
+    -   `dashboard/`: Main dashboard page for API key management.
+    -   `api/auth/`: NextAuth.js API routes and custom authentication endpoints.
+    -   `api/keys/`: API routes for managing API keys.
+-   `components/`: Reusable React components.
+    -   `auth/`: Authentication-related components.
+    -   `dashboard/`: Dashboard-specific components.
+    -   `providers/`: Context providers (Auth, React Query, Theme).
+    -   `ui/`: Shadcn UI components.
+-   `lib/`: Utility functions and mock database.
+    -   `auth.ts`: NextAuth.js configuration.
+    -   `mock-db.ts`: In-memory mock database for users and API keys.
+    -   `types.ts`: TypeScript type definitions.
+    -   `utils.ts`: General utility functions.
+-   `public/`: Static assets.
+-   `styles/`: Global CSS styles.
+
+## Authentication Flow
+
+1.  **Sign Up**: Users can create an account by providing a name, email, and password. A verification code is "sent" to their email (logged in the console for mock-db).
+2.  **Email Verification**: Users must enter the verification code to activate their account.
+3.  **Login**: After verification, users can log in with their email and password.
+4.  **Dashboard Access**: Authenticated users are redirected to the dashboard to manage their API keys.
+
+## API Key Management
+
+-   **Create**: Generate new API keys with a given name.
+-   **View**: See a list of all generated API keys, their creation date, and last used date.
+-   **Regenerate**: Generate a new secret for an existing API key.
+-   **Delete**: Remove an API key.
+
+## Mock Database
+
+For demonstration purposes, this project uses an in-memory mock database (`lib/mock-db.ts`). All user and API key data will be lost when the server restarts. For a production application, you would integrate with a real database (e.g., PostgreSQL, MongoDB, Supabase).
+
+## Deployment
+
+This application can be easily deployed to Vercel.
+
+\`\`\`bash
+npm run build
+npm start
 \`\`\`
-.
-├── app/
-│   ├── api/
-│   │   ├── auth/
-│   │   │   ├── [...nextauth]/route.ts
-│   │   │   ├── resend-verification/route.ts
-│   │   │   ├── signup/route.ts
-│   │   │   └── verify-email/route.ts
-│   │   └── keys/
-│   │       ├── [id]/
-│   │       │   ├── regenerate/route.ts
-│   │       │   └── route.ts
-│   │       └── route.ts
-│   ├── auth/
-│   │   ├── login/page.tsx
-│   │   ├── signup/page.tsx
-│   │   └── verify-email/page.tsx
-│   ├── dashboard/page.tsx
-│   ├── globals.css
-│   └── layout.tsx
-├── components/
-│   ├── auth/
-│   │   ├── login-form.tsx
-│   │   ├── signup-form.tsx
-│   │   └── verify-email-form.tsx
-│   ├── dashboard/
-│   │   ├── api-key-manager.tsx
-│   │   ├── api-key-table.tsx
-│   │   ├── create-api-key-dialog.tsx
-│   │   └── dashboard-header.tsx
-│   ├── providers/
-│   │   ├── auth-provider.tsx
-│   │   └── query-provider.tsx
-│   └── ui/
-│       └── ... (shadcn/ui components)
-├── hooks/
-│   ├── use-mobile.tsx
-│   └── use-toast.ts
-├── lib/
-│   ├── auth.ts
-│   ├── mock-db.ts
-│   ├── types.ts
-│   └── utils.ts
-├── public/
-│   └── ... (images, svgs)
-├── styles/
-│   └── globals.css
-├── next.config.mjs
-├── package.json
-├── postcss.config.mjs
-├── tailwind.config.js
-└── tsconfig.json
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!

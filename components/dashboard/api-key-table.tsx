@@ -1,11 +1,11 @@
 "use client"
 
+import { Copy, Trash, RefreshCw } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { ApiKey } from "@/lib/types"
-import { format } from "date-fns"
+import { toast } from "@/components/ui/use-toast"
 
 interface ApiKeyTableProps {
   apiKeys: ApiKey[]
@@ -15,48 +15,97 @@ interface ApiKeyTableProps {
   isDeleting: boolean
 }
 
-export default function ApiKeyTable({ apiKeys, onRegenerate, onDelete, isRegenerating, isDeleting }: ApiKeyTableProps) {
+export function ApiKeyTable({ apiKeys, onRegenerate, onDelete, isRegenerating, isDeleting }: ApiKeyTableProps) {
+  const handleCopy = (key: string) => {
+    navigator.clipboard.writeText(key)
+    toast({
+      title: "Copied!",
+      description: "API key copied to clipboard.",
+    })
+  }
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Key</TableHead>
-          <TableHead>Created At</TableHead>
-          <TableHead>Last Used</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {apiKeys.map((key) => (
-          <TableRow key={key.id}>
-            <TableCell className="font-medium">{key.name}</TableCell>
-            <TableCell className="font-mono text-sm">
-              {key.key.substring(0, 8)}...{key.key.substring(key.key.length - 4)}
-            </TableCell>
-            <TableCell>{format(new Date(key.createdAt), "PPP")}</TableCell>
-            <TableCell>{key.lastUsed ? format(new Date(key.lastUsed), "PPP") : "Never"}</TableCell>
-            <TableCell className="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onRegenerate(key.id)} disabled={isRegenerating}>
-                    {isRegenerating ? "Regenerating..." : "Regenerate"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(key.id)} disabled={isDeleting}>
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Key</TableHead>
+            <TableHead>Created At</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {apiKeys.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                No API keys found. Create one to get started!
+              </TableCell>
+            </TableRow>
+          ) : (
+            apiKeys.map((key) => (
+              <TableRow key={key.id}>
+                <TableCell className="font-medium">{key.name}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate max-w-[150px] md:max-w-none">{key.key}</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={() => handleCopy(key.key)} className="h-7 w-7">
+                            <Copy className="h-4 w-4" />
+                            <span className="sr-only">Copy API Key</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Copy API Key</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableCell>
+                <TableCell>{new Date(key.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => onRegenerate(key.id)}
+                            disabled={isRegenerating}
+                            className="h-7 w-7"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                            <span className="sr-only">Regenerate</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Regenerate Key</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => onDelete(key.id)}
+                            disabled={isDeleting}
+                            className="h-7 w-7"
+                          >
+                            <Trash className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete Key</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

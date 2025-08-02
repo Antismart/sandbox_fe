@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    authInterrupts: true,
+  webpack: (config) => {
+    config.externals.push({
+      "node:buffer": "commonjs node:buffer",
+    });
+    return config;
   },
   eslint: {
     ignoreDuringBuilds: true,

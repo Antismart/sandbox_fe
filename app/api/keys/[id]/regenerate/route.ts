@@ -1,26 +1,23 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
+import { NextResponse } from "next/server"
+import { generateApiKey, getApiKeyById, updateApiKey } from "@/lib/mock-db"
+import { auth } from "@/lib/auth"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const keyId = params.id
-
-    // In a real app, you'd regenerate the key in your database
-    // const newKey = await regenerateApiKey(keyId, session.user.id)
-
-    const newKey = `sk_test_${Math.random().toString(36).substring(2, 34)}`
-
-    return NextResponse.json({
-      message: "API key regenerated successfully",
-      key: newKey,
-    })
-  } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const session = await auth()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const { id } = params
+
+  const existingKey = getApiKeyById(id)
+  if (!existingKey || existingKey.userId !== session.user.id) {
+    return NextResponse.json({ error: "API Key not found or unauthorized" }, { status: 404 })
+  }
+
+  const newKey = generateApiKey()
+  const updatedKey = { ...existingKey, key: newKey, createdAt: new Date().toISOString(), lastUsed: undefined }
+  updateApiKey(updatedKey)
+
+  return NextResponse.json(updatedKey)
 }

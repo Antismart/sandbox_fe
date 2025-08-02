@@ -1,18 +1,6 @@
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
 
-export default async function HomePage() {
-  try {
-    const session = await getServerSession(authOptions)
-
-    if (session) {
-      redirect("/dashboard")
-    } else {
-      redirect("/auth/login")
-    }
-  } catch (error) {
-    console.error("Session error:", error)
-    redirect("/auth/login")
-  }
+export default function Home() {
+  redirect("/auth/login")
+  return null
 }

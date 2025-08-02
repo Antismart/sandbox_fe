@@ -1,43 +1,26 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { hash } from "bcryptjs"
-import { z } from "zod"
+import { NextResponse } from "next/server"
+import { createUser } from "@/lib/mock-db"
 
-const signupSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-})
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { email, password } = signupSchema.parse(body)
+    const { email, password } = await request.json()
 
-    // Check if user already exists (placeholder)
-    // const existingUser = await getUserByEmail(email)
-    // if (existingUser) {
-    //   return NextResponse.json({ error: 'USER_EXISTS' }, { status: 400 })
-    // }
-
-    // Hash password
-    const hashedPassword = await hash(password, 12)
-
-    // Create user (placeholder)
-    // const user = await createUser({
-    //   email,
-    //   password: hashedPassword,
-    // })
-
-    // Send verification email (placeholder)
-    // await sendVerificationEmail(email)
-
-    return NextResponse.json({
-      message: "User created successfully. Please check your email to verify your account.",
-    })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input data" }, { status: 400 })
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
+    const user = createUser(email, password)
+
+    if (!user) {
+      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
+    }
+
+    return NextResponse.json(
+      { message: "User created successfully. Verification code sent to email." },
+      { status: 201 },
+    )
+  } catch (error) {
+    console.error("Error during signup:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

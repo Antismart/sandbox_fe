@@ -1,42 +1,36 @@
 "use client"
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { useRouter } from "next/navigation"
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, AlertCircle, CheckCircle, Mail } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
-const verifySchema = z.object({
-  code: z.string().min(6, "Verification code must be 6 characters").max(6),
-})
-
-type VerifyFormData = z.infer<typeof verifySchema>
-
-export function VerifyEmailForm() {
+export default function VerifyEmailForm() {
+  const [code, setCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isResending, setIsResending] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const email = searchParams.get("email") || ""
   const { toast } = useToast()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<VerifyFormData>({
-    resolver: zodResolver(verifySchema),
-  })
+  useEffect(() => {
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "Email not provided. Please sign up again.",
+        variant: "destructive",
+      })
+      router.push("/auth/signup")
+    }
+  }, [email, router, toast])
 
-  const onSubmit = async (data: VerifyFormData) => {
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsLoading(true)
-    setError("")
 
     try {
       const response = await fetch("/api/auth/verify-email", {
@@ -44,113 +38,92 @@ export function VerifyEmailForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ code: data.code }),
+        body: JSON.stringify({ email, code }),
       })
 
-      const result = await response.json()
+      const data = await response.json()
 
       if (!response.ok) {
-        setError(result.error || "Invalid verification code.")
-      } else {
-        setSuccess(true)
-        toast({
-          title: "Email verified successfully",
-          description: "You can now sign in to your account.",
-        })
-        setTimeout(() => {
-          router.push("/auth/login")
-        }, 2000)
+        throw new Error(data.error || "Email verification failed")
       }
-    } catch (error) {
-      setError("An unexpected error occurred. Please try again.")
+
+      toast({
+        title: "Email Verified",
+        description: "Your email has been successfully verified. You can now log in.",
+      })
+      router.push("/auth/login")
+    } catch (error: any) {
+      toast({
+        title: "Verification Failed",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const resendVerification = async () => {
-    setIsResending(true)
-
+  const handleResend = async () => {
+    setIsLoading(true)
     try {
       const response = await fetch("/api/auth/resend-verification", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
       })
 
-      if (response.ok) {
-        toast({
-          title: "Verification email sent",
-          description: "Please check your email for a new verification link.",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to resend verification email.",
-          variant: "destructive",
-        })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to resend code")
       }
-    } catch (error) {
+
       toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
+        title: "Code Resent",
+        description: "A new verification code has been sent to your email.",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Resend Failed",
+        description: error.message || "An unexpected error occurred while resending.",
         variant: "destructive",
       })
     } finally {
-      setIsResending(false)
+      setIsLoading(false)
     }
   }
 
-  if (success) {
-    return (
-      <Alert>
-        <CheckCircle className="h-4 w-4" />
-        <AlertDescription>Email verified successfully! Redirecting to login...</AlertDescription>
-      </Alert>
-    )
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <Mail className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-2 text-sm text-gray-600">Enter the 6-digit code sent to your email address</p>
+    <form onSubmit={handleVerify} className="grid gap-4">
+      <div className="grid gap-2">
+        <Label htmlFor="code" className="text-center">
+          Verification Code
+        </Label>
+        <InputOTP maxLength={6} value={code} onChange={(value) => setCode(value)} disabled={isLoading}>
+          <InputOTPGroup className="w-full justify-center">
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
       </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="code">Verification Code</Label>
-          <Input
-            id="code"
-            type="text"
-            placeholder="Enter 6-digit code"
-            maxLength={6}
-            {...register("code")}
-            disabled={isLoading}
-            className="text-center text-lg tracking-widest"
-          />
-          {errors.code && <p className="text-sm text-destructive">{errors.code.message}</p>}
-        </div>
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Verify Email
-        </Button>
-      </form>
-
-      <div className="text-center">
-        <p className="text-sm text-gray-600">
-          Didn't receive the email?{" "}
-          <Button variant="link" className="p-0 h-auto font-normal" onClick={resendVerification} disabled={isResending}>
-            {isResending ? "Sending..." : "Resend verification email"}
-          </Button>
-        </p>
-      </div>
-    </div>
+      <Button type="submit" className="w-full" disabled={isLoading || code.length !== 6}>
+        {isLoading ? "Verifying..." : "Verify Email"}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full bg-transparent"
+        onClick={handleResend}
+        disabled={isLoading}
+      >
+        Resend Code
+      </Button>
+    </form>
   )
 }

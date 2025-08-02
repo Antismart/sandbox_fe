@@ -1,8 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { signOut } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -12,70 +10,74 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { CircleUser, Menu } from "lucide-react"
+import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { LogOut, Settings, User } from "lucide-react"
 
-interface DashboardHeaderProps {
-  user: {
-    name?: string | null
-    email?: string | null
-    image?: string | null
-  }
-}
+export default function DashboardHeader() {
+  const { data: session } = useSession()
 
-export function DashboardHeader({ user }: DashboardHeaderProps) {
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const router = useRouter()
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
+  const handleSignOut = async () => {
     await signOut({ callbackUrl: "/auth/login" })
-    router.refresh()
   }
 
   return (
-    <header className="bg-white shadow">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-6">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-gray-900">API Dashboard</h1>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.image || ""} alt={user.name || ""} />
-                    <AvatarFallback>{user.name?.charAt(0) || user.email?.charAt(0) || "U"}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name || "User"}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>{isLoggingOut ? "Signing out..." : "Sign out"}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+    <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+        <Link href="#" className="flex items-center gap-2 text-lg font-semibold md:text-base">
+          <span className="sr-only">API Key Dashboard</span>
+        </Link>
+        <Link href="/dashboard" className="text-foreground transition-colors hover:text-foreground">
+          Dashboard
+        </Link>
+        {/* Add more navigation links here if needed */}
+      </nav>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" size="icon" className="shrink-0 md:hidden bg-transparent">
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle navigation menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="flex flex-col">
+          <nav className="grid gap-2 text-lg font-medium">
+            <Link href="#" className="flex items-center gap-2 text-lg font-semibold">
+              <span className="sr-only">API Key Dashboard</span>
+            </Link>
+            <Link
+              href="/dashboard"
+              className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-foreground hover:text-foreground"
+            >
+              Dashboard
+            </Link>
+            {/* Add more mobile navigation links here if needed */}
+          </nav>
+        </SheetContent>
+      </Sheet>
+      <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+        <div className="ml-auto flex-1 sm:flex-initial">{/* Search or other elements can go here */}</div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="secondary" size="icon" className="rounded-full">
+              <Avatar>
+                <AvatarImage src={session?.user?.image || "/placeholder-user.png"} alt="User Avatar" />
+                <AvatarFallback>
+                  {session?.user?.email ? session.user.email[0].toUpperCase() : <CircleUser className="h-5 w-5" />}
+                </AvatarFallback>
+              </Avatar>
+              <span className="sr-only">Toggle user menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )

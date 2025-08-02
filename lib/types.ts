@@ -1,42 +1,17 @@
-export type Environment = "mainnet" | "testnet"
-
-export interface ApiKey {
-  id: string
-  name: string
-  description?: string
-  key: string
-  environment: Environment
-  status: "active" | "revoked"
-  createdAt: string
-  lastUsed?: string
-  userId: string
-}
-
 export interface User {
   id: string
   email: string
+  password?: string // Optional for client-side, required for mock-db
   name?: string
-  emailVerified: boolean
+  emailVerified?: boolean
+  verificationCode?: string
+}
+
+export interface ApiKey {
+  id: string
+  userId: string
+  name: string
+  key: string
   createdAt: string
-}
-
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string
-      email: string
-      name?: string
-      emailVerified: boolean
-    }
-  }
-
-  interface User {
-    emailVerified: boolean
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    emailVerified: boolean
-  }
+  lastUsed?: string
 }

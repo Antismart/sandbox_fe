@@ -1,109 +1,115 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Globe, TestTube } from "lucide-react"
-import { ApiKeyTable } from "./api-key-table"
-import { CreateApiKeyDialog } from "./create-api-key-dialog"
-import type { ApiKey, Environment } from "@/lib/types"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "@/components/ui/use-toast"
+import ApiKeyTable from "./api-key-table"
+import CreateApiKeyDialog from "./create-api-key-dialog"
+import type { ApiKey } from "@/lib/types"
 
-export function ApiKeyManager() {
-  const [activeTab, setActiveTab] = useState<Environment>("testnet")
+export default function ApiKeyManager() {
+  const queryClient = useQueryClient()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   const {
     data: apiKeys,
     isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["api-keys", activeTab],
+    isError,
+  } = useQuery<ApiKey[]>({
+    queryKey: ["apiKeys"],
     queryFn: async () => {
-      const response = await fetch(`/api/keys?environment=${activeTab}`)
-      if (!response.ok) throw new Error("Failed to fetch API keys")
-      return response.json() as Promise<ApiKey[]>
+      const response = await fetch("/api/keys")
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to fetch API keys")
+      }
+      return response.json()
     },
   })
 
-  const handleCreateKey = () => {
-    setIsCreateDialogOpen(true)
-  }
+  const createApiKeyMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await fetch("/api/keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to create API key")
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["apiKeys"] })
+      toast({ title: "API Key Created", description: "Your new API key has been generated." })
+      setIsCreateDialogOpen(false)
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    },
+  })
 
-  const handleKeyCreated = () => {
-    refetch()
-    setIsCreateDialogOpen(false)
-  }
+  const regenerateApiKeyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/keys/${id}/regenerate`, {
+        method: "POST",
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to regenerate API key")
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["apiKeys"] })
+      toast({ title: "API Key Regenerated", description: "The API key has been successfully regenerated." })
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    },
+  })
+
+  const deleteApiKeyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/keys/${id}`, {
+        method: "DELETE",
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to delete API key")
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["apiKeys"] })
+      toast({ title: "API Key Deleted", description: "The API key has been successfully deleted." })
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    },
+  })
+
+  if (isLoading) return <div>Loading API keys...</div>
+  if (isError) return <div>Error loading API keys.</div>
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">API Keys</h2>
-          <p className="text-muted-foreground">Manage your API keys for different environments</p>
-        </div>
-        <Button onClick={handleCreateKey}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create API Key
-        </Button>
+    <div>
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setIsCreateDialogOpen(true)}>Create New API Key</Button>
       </div>
-
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Environment)}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="testnet" className="flex items-center gap-2">
-            <TestTube className="h-4 w-4" />
-            Testnet
-          </TabsTrigger>
-          <TabsTrigger value="mainnet" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            Mainnet
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="testnet" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TestTube className="h-5 w-5" />
-                Testnet Environment
-                <Badge variant="secondary">Development</Badge>
-              </CardTitle>
-              <CardDescription>
-                API keys for testing and development. These keys work with sandbox data only.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ApiKeyTable apiKeys={apiKeys || []} isLoading={isLoading} environment="testnet" onRefresh={refetch} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="mainnet" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                Mainnet Environment
-                <Badge variant="destructive">Production</Badge>
-              </CardTitle>
-              <CardDescription>
-                API keys for production use. These keys work with live data and should be kept secure.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ApiKeyTable apiKeys={apiKeys || []} isLoading={isLoading} environment="mainnet" onRefresh={refetch} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
+      <ApiKeyTable
+        apiKeys={apiKeys || []}
+        onRegenerate={regenerateApiKeyMutation.mutate}
+        onDelete={deleteApiKeyMutation.mutate}
+        isRegenerating={regenerateApiKeyMutation.isPending}
+        isDeleting={deleteApiKeyMutation.isPending}
+      />
       <CreateApiKeyDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
-        environment={activeTab}
-        onKeyCreated={handleKeyCreated}
+        onCreate={createApiKeyMutation.mutate}
+        isCreating={createApiKeyMutation.isPending}
       />
     </div>
   )

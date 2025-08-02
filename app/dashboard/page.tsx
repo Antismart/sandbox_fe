@@ -1,35 +1,22 @@
-import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { ApiKeyManager } from "@/components/dashboard/api-key-manager"
+import ApiKeyManager from "@/components/dashboard/api-key-manager"
+import DashboardHeader from "@/components/dashboard/dashboard-header"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default async function DashboardPage() {
-  try {
-    const session = await getServerSession(authOptions)
-
-    if (!session) {
-      redirect("/auth/login")
-    }
-
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <DashboardHeader user={session.user} />
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">API Key Management</h1>
-              <p className="mt-2 text-gray-600">
-                Generate and manage your API keys for Mainnet and Testnet environments
-              </p>
-            </div>
+export default function DashboardPage() {
+  return (
+    <div className="flex min-h-screen w-full flex-col">
+      <DashboardHeader />
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>API Keys</CardTitle>
+            <CardDescription>Manage your API keys for various services.</CardDescription>
+          </CardHeader>
+          <CardContent>
             <ApiKeyManager />
-          </div>
-        </main>
-      </div>
-    )
-  } catch (error) {
-    console.error("Dashboard error:", error)
-    redirect("/auth/login")
-  }
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  )
 }

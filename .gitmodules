@@ -1,6 +1,0 @@
-[submodule "build_quest/contract/BuildQuest/lib/forge-std"]
-	path = build_quest/contract/BuildQuest/lib/forge-std
-	url = https://github.com/foundry-rs/forge-std
-[submodule "base-build-quest/contracts/smartcontracts/lib/forge-std"]
-	path = base-build-quest/contracts/smartcontracts/lib/forge-std
-	url = https://github.com/foundry-rs/forge-std

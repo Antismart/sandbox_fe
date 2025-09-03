@@ -1,0 +1,17 @@
+{
+  "name": "@microcrop/flow-client",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@onflow/fcl": "^1.20.0",
+    "@onflow/types": "^1.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  }
+}
